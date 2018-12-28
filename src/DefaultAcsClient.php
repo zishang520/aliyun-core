@@ -1,11 +1,14 @@
 <?php
 namespace luoyy\AliCore;
 
+use luoyy\AliCore\Auth\EcsRamRoleService;
+use luoyy\AliCore\Auth\RamRoleArnService;
 use luoyy\AliCore\Exception\ClientException;
 use luoyy\AliCore\Exception\ServerException;
 use luoyy\AliCore\Http\HttpHelper;
 use luoyy\AliCore\IAcsClient;
 use luoyy\AliCore\Regions\EndpointProvider;
+use luoyy\AliCore\Regions\LocationService;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -25,18 +28,62 @@ use luoyy\AliCore\Regions\EndpointProvider;
  * specific language governing permissions and limitations
  * under the License.
  */
+
 class DefaultAcsClient implements IAcsClient
 {
+    /**
+     * @var IClientProfile
+     */
     public $iClientProfile;
+    /**
+     * @var bool
+     */
+    public $__urlTestFlag__;
+    /**
+     * @var LocationService
+     */
+    private $locationService;
+    /**
+     * @var RamRoleArnService
+     */
+    private $ramRoleArnService;
+    /**
+     * @var EcsRamRoleService
+     */
+    private $ecsRamRoleService;
 
+    /**
+     * DefaultAcsClient constructor.
+     *
+     * @param $iClientProfile
+     */
     public function __construct($iClientProfile)
     {
         $this->iClientProfile = $iClientProfile;
+        $this->__urlTestFlag__ = false;
+        $this->locationService = new LocationService($this->iClientProfile);
+        if ($this->iClientProfile->isRamRoleArn()) {
+            $this->ramRoleArnService = new RamRoleArnService($this->iClientProfile);
+        }
+        if ($this->iClientProfile->isEcsRamRole()) {
+            $this->ecsRamRoleService = new EcsRamRoleService($this->iClientProfile);
+        }
     }
 
+    /**
+     * @param      $request
+     * @param null $iSigner
+     * @param null $credential
+     * @param bool $autoRetry
+     * @param int  $maxRetryNumber
+     *
+     * @return mixed|SimpleXMLElement
+     * @throws ClientException
+     * @throws ServerException
+     */
     public function getAcsResponse($request, $iSigner = null, $credential = null, $autoRetry = true, $maxRetryNumber = 3)
     {
-        $httpResponse = $this->doAction($request, $iSigner, $credential, $autoRetry, $maxRetryNumber);
+        $httpResponse = $this->doActionImpl($request, $iSigner, $credential, $autoRetry, $maxRetryNumber);
         $respObject = $this->parseAcsResponse($httpResponse->getBody(), $request->getAcceptFormat());
         if (false == $httpResponse->isSuccess()) {
             $this->buildApiException($respObject, $httpResponse->getStatus());
@@ -44,11 +91,20 @@ class DefaultAcsClient implements IAcsClient
         return $respObject;
     }
 
-    public function doAction($request, $iSigner = null, $credential = null, $autoRetry = true, $maxRetryNumber = 3)
+    /**
+     * @param      $request
+     * @param null $iSigner
+     * @param null $credential
+     * @param bool $autoRetry
+     * @param int  $maxRetryNumber
+     *
+     * @return HttpResponse
+     * @throws ClientException
+     */
+    private function doActionImpl($request, $iSigner = null, $credential = null, $autoRetry = true, $maxRetryNumber = 3)
     {
-        if (null == $this->iClientProfile && (null == $iSigner || null == $credential
-            || null == $request->getRegionId() || null == $request->getAcceptFormat())) {
-            throw new ClientException("No active profile found.", "SDK.InvalidProfile");
+        if (null == $this->iClientProfile && (null == $iSigner || null == $credential || null == $request->getRegionId() || null == $request->getAcceptFormat())) {
+            throw new ClientException('No active profile found.', 'SDK.InvalidProfile');
         }
         if (null == $iSigner) {
             $iSigner = $this->iClientProfile->getSigner();
@@ -56,22 +112,90 @@ class DefaultAcsClient implements IAcsClient
         if (null == $credential) {
             $credential = $this->iClientProfile->getCredential();
         }
+        if ($this->iClientProfile->isRamRoleArn()) {
+            $credential = $this->ramRoleArnService->getSessionCredential();
+        }
+        if ($this->iClientProfile->isEcsRamRole()) {
+            $credential = $this->ecsRamRoleService->getSessionCredential();
+        }
+        if (null == $credential) {
+            throw new ClientException('Incorrect user credentials.', 'SDK.InvalidCredential');
+        }
+
         $request = $this->prepareRequest($request);
-        $domain = EndpointProvider::findProductDomain($request->getRegionId(), $request->getProduct());
+
+        // Get the domain from the Location Service by speicified `ServiceCode` and `RegionId`.
+        $domain = null;
+        if (null != $request->getLocationServiceCode()) {
+            $domain =
+            $this->locationService->findProductDomain($request->getRegionId(),
+                $request->getLocationServiceCode(),
+                $request->getLocationEndpointType(),
+                $request->getProduct());
+        }
+        if ($domain == null) {
+            $domain = EndpointProvider::findProductDomain($request->getRegionId(), $request->getProduct());
+        }
+
         if (null == $domain) {
-            throw new ClientException("Can not find endpoint to access.", "SDK.InvalidRegionId");
+            throw new ClientException('Can not find endpoint to access.', 'SDK.InvalidRegionId');
         }
         $requestUrl = $request->composeUrl($iSigner, $credential, $domain);
-        $httpResponse = HttpHelper::curl($requestUrl, $request->getMethod(), null, $request->getHeaders());
+
+        if ($this->__urlTestFlag__) {
+            throw new ClientException($requestUrl, 'URLTestFlagIsSet');
+        }
+
+        if (count($request->getDomainParameter()) > 0) {
+            $httpResponse = HttpHelper::curl($requestUrl,
+                $request->getMethod(),
+                $request->getDomainParameter(),
+                $request->getHeaders());
+        } else {
+            $httpResponse = HttpHelper::curl($requestUrl, $request->getMethod(), $request->getContent(), $request->getHeaders());
+        }
+
         $retryTimes = 1;
         while (500 <= $httpResponse->getStatus() && $autoRetry && $retryTimes < $maxRetryNumber) {
-            $requestUrl = $request->composeUrl($iSigner, $credential);
-            $httpResponse = HttpHelper::curl($requestUrl, null, $request->getHeaders());
+            $requestUrl = $request->composeUrl($iSigner, $credential, $domain);
+
+            if (count($request->getDomainParameter()) > 0) {
+                $httpResponse = HttpHelper::curl($requestUrl,
+                    $request->getMethod(),
+                    $request->getDomainParameter(),
+                    $request->getHeaders());
+            } else {
+                $httpResponse = HttpHelper::curl($requestUrl,
+                    $request->getMethod(),
+                    $request->getContent(),
+                    $request->getHeaders());
+            }
             $retryTimes++;
         }
         return $httpResponse;
     }
 
+    /**
+     * @param AcsRequest $request
+     * @param null       $iSigner
+     * @param null       $credential
+     * @param bool       $autoRetry
+     * @param int        $maxRetryNumber
+     *
+     * @return HttpResponse|mixed
+     * @throws ClientException
+     */
+    public function doAction($request, $iSigner = null, $credential = null, $autoRetry = true, $maxRetryNumber = 3)
+    {
+        trigger_error('doAction() is deprecated. Please use getAcsResponse() instead.', E_USER_NOTICE);
+        return $this->doActionImpl($request, $iSigner, $credential, $autoRetry, $maxRetryNumber);
+    }
+
+    /**
+     * @param $request
+     *
+     * @return mixed
+     */
     private function prepareRequest($request)
     {
         if (null == $request->getRegionId()) {
@@ -81,27 +205,59 @@ class DefaultAcsClient implements IAcsClient
             $request->setAcceptFormat($this->iClientProfile->getFormat());
         }
         if (null == $request->getMethod()) {
-            $request->setMethod("GET");
+            $request->setMethod('GET');
         }
         return $request;
     }
 
+    /**
+     * @param object $respObject
+     * @param int    $httpStatus
+     *
+     * @throws ServerException
+     */
     private function buildApiException($respObject, $httpStatus)
     {
-        if (500 <= $httpStatus) {
-            throw new ServerException($respObject->Message, $respObject->Code);
-        } else {
-            throw new ClientException($respObject->Message, $respObject->Code);
+        // Compatible with different results
+        if (isset($respObject->Message, $respObject->Code, $respObject->RequestId)) {
+            throw new ServerException(
+                $respObject->Message, $respObject->Code, $httpStatus, $respObject->RequestId
+            );
         }
+
+        if (isset($respObject->message, $respObject->code, $respObject->requestId)) {
+            throw new ServerException(
+                $respObject->message, $respObject->code, $httpStatus, $respObject->requestId
+            );
+        }
+
+        if (isset($respObject->errorMsg, $respObject->errorCode)) {
+            throw new ServerException(
+                $respObject->errorMsg, $respObject->errorCode, $httpStatus, 'None'
+            );
+        }
+
+        throw new ServerException(
+            'The server returned an error without a detailed message. ',
+            'UnknownServerError',
+            $httpStatus,
+            'None'
+        );
     }
 
+    /**
+     * @param $body
+     * @param $format
+     *
+     * @return mixed|SimpleXMLElement
+     */
     private function parseAcsResponse($body, $format)
     {
-        if ("JSON" == $format) {
+        if ('JSON' === $format) {
             $respObject = json_decode($body);
-        } else if ("XML" == $format) {
+        } elseif ('XML' === $format) {
             $respObject = @simplexml_load_string($body);
-        } else if ("RAW" == $format) {
+        } elseif ('RAW' === $format) {
             $respObject = $body;
         }
         return $respObject;

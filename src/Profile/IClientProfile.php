@@ -19,6 +19,7 @@ namespace luoyy\AliCore\Profile;
  * specific language governing permissions and limitations
  * under the License.
  */
+
 interface IClientProfile
 {
     public function getSigner();
@@ -28,4 +29,8 @@ interface IClientProfile
     public function getFormat();
 
     public function getCredential();
+
+    public function isRamRoleArn();
+
+    public function isEcsRamRole();
 }

@@ -20,19 +20,11 @@ namespace luoyy\AliCore\Auth;
  * under the License.
  */
 
-interface ISigner
+abstract class AbstractCredential
 {
-    public function getSignatureMethod();
+    abstract public function getAccessKeyId();
 
-    public function getSignatureVersion();
+    abstract public function getAccessSecret();
 
-    /**
-     * @param $source
-     * @param $accessSecret
-     *
-     * @return mixed
-     */
-    public function signString($source, $accessSecret);
-
-    public function getSignatureType();
+    abstract public function getSecurityToken();
 }

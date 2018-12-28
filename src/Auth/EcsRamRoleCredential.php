@@ -1,5 +1,7 @@
 <?php
-namespace luoyy\AliCore\Regions;
+namespace luoyy\AliCore\Auth;
+
+use luoyy\AliCore\Auth\AbstractCredential;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,58 +22,60 @@ namespace luoyy\AliCore\Regions;
  * under the License.
  */
 
-class ProductDomain
+class EcsRamRoleCredential extends AbstractCredential
 {
     /**
      * @var string
      */
-    private $productName;
-    /**
-     * @var string
-     */
-    private $domainName;
+    private $roleName;
 
     /**
-     * ProductDomain constructor.
+     * EcsRamRoleCredential constructor.
      *
-     * @param string $product
-     * @param string $domain
+     * @param $roleName
      */
-    public function __construct($product, $domain)
+    public function __construct($roleName)
     {
-        $this->productName = $product;
-        $this->domainName = $domain;
+        $this->roleName = $roleName;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAccessKeyId()
+    {
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAccessSecret()
+    {
+        return null;
     }
 
     /**
      * @return string
      */
-    public function getProductName()
+    public function getRoleName()
     {
-        return $this->productName;
+        return $this->roleName;
     }
 
     /**
-     * @param $productName
+     * @param $roleName
      */
-    public function setProductName($productName)
+    public function setRoleName($roleName)
     {
-        $this->productName = $productName;
+        $this->roleName = $roleName;
     }
 
     /**
-     * @return string
+     * @return null
      */
-    public function getDomainName()
+    public function getSecurityToken()
     {
-        return $this->domainName;
-    }
-
-    /**
-     * @param $domainName
-     */
-    public function setDomainName($domainName)
-    {
-        $this->domainName = $domainName;
+        return null;
     }
 }

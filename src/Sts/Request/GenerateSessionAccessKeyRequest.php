@@ -1,5 +1,7 @@
 <?php
-namespace luoyy\AliCore\Auth;
+namespace luoyy\AliCore\Sts\Request;
+
+use luoyy\AliCore\RpcAcsRequest;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,19 +22,26 @@ namespace luoyy\AliCore\Auth;
  * under the License.
  */
 
-interface ISigner
+class GenerateSessionAccessKeyRequest extends RpcAcsRequest
 {
-    public function getSignatureMethod();
+    public function __construct()
+    {
+        parent::__construct("Sts", "2015-04-01", "GenerateSessionAccessKey");
+        $this->setProtocol("https");
+        $this->setMethod("POST");
+    }
 
-    public function getSignatureVersion();
+    private $durationSeconds;
 
-    /**
-     * @param $source
-     * @param $accessSecret
-     *
-     * @return mixed
-     */
-    public function signString($source, $accessSecret);
+    public function getDurationSeconds()
+    {
+        return $this->durationSeconds;
+    }
 
-    public function getSignatureType();
+    public function setDurationSeconds($durationSeconds)
+    {
+        $this->durationSeconds = $durationSeconds;
+        $this->queryParameters["DurationSeconds"] = $durationSeconds;
+    }
+
 }

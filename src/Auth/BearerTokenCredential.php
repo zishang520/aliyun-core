@@ -1,5 +1,7 @@
 <?php
-namespace luoyy\AliCore\Regions;
+namespace luoyy\AliCore\Auth;
+
+use luoyy\AliCore\Auth\AbstractCredential;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,58 +22,60 @@ namespace luoyy\AliCore\Regions;
  * under the License.
  */
 
-class ProductDomain
+class BearerTokenCredential extends AbstractCredential
 {
     /**
      * @var string
      */
-    private $productName;
-    /**
-     * @var string
-     */
-    private $domainName;
+    private $bearerToken;
 
     /**
-     * ProductDomain constructor.
+     * BearerTokenCredential constructor.
      *
-     * @param string $product
-     * @param string $domain
+     * @param $bearerToken
      */
-    public function __construct($product, $domain)
+    public function __construct($bearerToken)
     {
-        $this->productName = $product;
-        $this->domainName = $domain;
+        $this->bearerToken = $bearerToken;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAccessKeyId()
+    {
+        return null;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAccessSecret()
+    {
+        return null;
     }
 
     /**
      * @return string
      */
-    public function getProductName()
+    public function getBearerToken()
     {
-        return $this->productName;
+        return $this->bearerToken;
     }
 
     /**
-     * @param $productName
+     * @param $bearerToken
      */
-    public function setProductName($productName)
+    public function setBearerToken($bearerToken)
     {
-        $this->productName = $productName;
+        $this->bearerToken = $bearerToken;
     }
 
     /**
-     * @return string
+     * @return null
      */
-    public function getDomainName()
+    public function getSecurityToken()
     {
-        return $this->domainName;
-    }
-
-    /**
-     * @param $domainName
-     */
-    public function setDomainName($domainName)
-    {
-        $this->domainName = $domainName;
+        return null;
     }
 }

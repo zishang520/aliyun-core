@@ -1,6 +1,8 @@
 <?php
 namespace luoyy\AliCore\Auth;
 
+use luoyy\AliCore\Auth\ISigner;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -20,19 +22,40 @@ namespace luoyy\AliCore\Auth;
  * under the License.
  */
 
-interface ISigner
+class BearTokenSigner implements ISigner
 {
-    public function getSignatureMethod();
-
-    public function getSignatureVersion();
-
     /**
      * @param $source
      * @param $accessSecret
      *
-     * @return mixed
+     * @return null
      */
-    public function signString($source, $accessSecret);
+    public function signString($source, $accessSecret)
+    {
+        return null;
+    }
 
-    public function getSignatureType();
+    /**
+     * @return null
+     */
+    public function getSignatureMethod()
+    {
+        return null;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSignatureVersion()
+    {
+        return '1.0';
+    }
+
+    /**
+     * @return string
+     */
+    public function getSignatureType()
+    {
+        return 'BEARERTOKEN';
+    }
 }

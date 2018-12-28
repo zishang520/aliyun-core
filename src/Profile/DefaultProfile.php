@@ -1,7 +1,10 @@
 <?php
 namespace luoyy\AliCore\Profile;
 
+use luoyy\AliCore\Auth\BearerTokenCredential;
 use luoyy\AliCore\Auth\Credential;
+use luoyy\AliCore\Auth\EcsRamRoleCredential;
+use luoyy\AliCore\Auth\RamRoleArnCredential;
 use luoyy\AliCore\Auth\ShaHmac1Signer;
 use luoyy\AliCore\Profile\IClientProfile;
 use luoyy\AliCore\Regions\Endpoint;
@@ -26,30 +29,119 @@ use luoyy\AliCore\Regions\ProductDomain;
  * specific language governing permissions and limitations
  * under the License.
  */
+
 class DefaultProfile implements IClientProfile
 {
+    /**
+     * @var IClientProfile
+     */
     private static $profile;
+    /**
+     * @var array
+     */
     private static $endpoints;
+    /**
+     * @var AbstractCredential
+     */
     private static $credential;
+    /**
+     * @var string
+     */
     private static $regionId;
+    /**
+     * @var string
+     */
     private static $acceptFormat;
+    /**
+     * @var string
+     */
+    private static $authType;
 
+    /**
+     * @var ISigner
+     */
     private static $isigner;
+    /**
+     * @var AbstractCredential
+     */
     private static $iCredential;
 
-    private function __construct($regionId, $credential)
+    /**
+     * DefaultProfile constructor.
+     *
+     * @param        $regionId
+     * @param        $credential
+     * @param string $authType
+     * @param null   $isigner
+     */
+    private function __construct($regionId, $credential, $authType = 'RAM_AK', $isigner = null)
     {
         self::$regionId = $regionId;
         self::$credential = $credential;
+        self::$authType = $authType;
+        self::$isigner = $isigner;
     }
 
-    public static function getProfile($regionId, $accessKeyId, $accessSecret)
+    /**
+     * @param      $regionId
+     * @param      $accessKeyId
+     * @param      $accessSecret
+     * @param null $securityToken
+     *
+     * @return DefaultProfile|IClientProfile
+     */
+    public static function getProfile($regionId, $accessKeyId, $accessSecret, $securityToken = null)
     {
-        $credential = new Credential($accessKeyId, $accessSecret);
+        $credential = new Credential($accessKeyId, $accessSecret, $securityToken);
         self::$profile = new DefaultProfile($regionId, $credential);
         return self::$profile;
     }
 
+    /**
+     * @param $regionId
+     * @param $accessKeyId
+     * @param $accessSecret
+     * @param $roleArn
+     * @param $roleSessionName
+     *
+     * @return DefaultProfile|IClientProfile
+     */
+    public static function getRamRoleArnProfile($regionId, $accessKeyId, $accessSecret, $roleArn, $roleSessionName)
+    {
+        $credential = new RamRoleArnCredential($accessKeyId, $accessSecret, $roleArn, $roleSessionName);
+        self::$profile = new DefaultProfile($regionId, $credential, 'RAM_ROLE_ARN');
+        return self::$profile;
+    }
+
+    /**
+     * @param $regionId
+     * @param $roleName
+     *
+     * @return DefaultProfile|IClientProfile
+     */
+    public static function getEcsRamRoleProfile($regionId, $roleName)
+    {
+        $credential = new EcsRamRoleCredential($roleName);
+        self::$profile = new DefaultProfile($regionId, $credential, 'ECS_RAM_ROLE');
+        return self::$profile;
+    }
+
+    /**
+     * @param $regionId
+     * @param $bearerToken
+     *
+     * @return DefaultProfile|IClientProfile
+     */
+    public static function getBearerTokenProfile($regionId, $bearerToken)
+    {
+        $credential = new BearerTokenCredential($bearerToken);
+        self::$profile = new DefaultProfile($regionId, $credential, 'BEARER_TOKEN', new BearTokenSigner());
+        return self::$profile;
+    }
+
+    /**
+     * @return ISigner|ShaHmac1Signer|null
+     */
     public function getSigner()
     {
         if (null == self::$isigner) {
@@ -58,16 +150,25 @@ class DefaultProfile implements IClientProfile
         return self::$isigner;
     }
 
+    /**
+     * @return string
+     */
     public function getRegionId()
     {
         return self::$regionId;
     }
 
+    /**
+     * @return string
+     */
     public function getFormat()
     {
         return self::$acceptFormat;
     }
 
+    /**
+     * @return AbstractCredential
+     */
     public function getCredential()
     {
         if (null == self::$credential && null != self::$iCredential) {
@@ -76,6 +177,25 @@ class DefaultProfile implements IClientProfile
         return self::$credential;
     }
 
+    /**
+     * @return bool
+     */
+    public function isRamRoleArn()
+    {
+        return self::$authType == 'RAM_ROLE_ARN';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isEcsRamRole()
+    {
+        return self::$authType == 'ECS_RAM_ROLE';
+    }
+
+    /**
+     * @return array
+     */
     public static function getEndpoints()
     {
         if (null == self::$endpoints) {
@@ -84,6 +204,12 @@ class DefaultProfile implements IClientProfile
         return self::$endpoints;
     }
 
+    /**
+     * @param $endpointName
+     * @param $regionId
+     * @param $product
+     * @param $domain
+     */
     public static function addEndpoint($endpointName, $regionId, $product, $domain)
     {
         if (null == self::$endpoints) {
@@ -91,12 +217,19 @@ class DefaultProfile implements IClientProfile
         }
         $endpoint = self::findEndpointByName($endpointName);
         if (null == $endpoint) {
-            self::addEndpoint_($regionId, $product, $domain, $endpoint);
+            self::addEndpoint_($endpointName, $regionId, $product, $domain);
         } else {
             self::updateEndpoint($regionId, $product, $domain, $endpoint);
         }
+
+        LocationService::addEndPoint($regionId, $product, $domain);
     }
 
+    /**
+     * @param $endpointName
+     *
+     * @return mixed
+     */
     public static function findEndpointByName($endpointName)
     {
         foreach (self::$endpoints as $key => $endpoint) {
@@ -106,37 +239,57 @@ class DefaultProfile implements IClientProfile
         }
     }
 
+    /**
+     * @param $endpointName
+     * @param $regionId
+     * @param $product
+     * @param $domain
+     */
     private static function addEndpoint_($endpointName, $regionId, $product, $domain)
     {
         $regionIds = array($regionId);
         $productsDomains = array(new ProductDomain($product, $domain));
-        $endpoint = new Endpoint($endpointName, $regionIds, $productDomains);
-        array_push(self::$endpoints, $endpoint);
+        $endpoint = new Endpoint($endpointName, $regionIds, $productsDomains);
+        self::$endpoints[] = $endpoint;
     }
 
+    /**
+     * @param string   $regionId
+     * @param string   $product
+     * @param string   $domain
+     * @param Endpoint $endpoint
+     */
     private static function updateEndpoint($regionId, $product, $domain, $endpoint)
     {
         $regionIds = $endpoint->getRegionIds();
         if (!in_array($regionId, $regionIds)) {
-            array_push($regionIds, $regionId);
+            $regionIds[] = $regionId;
             $endpoint->setRegionIds($regionIds);
         }
 
         $productDomains = $endpoint->getProductDomains();
-        if (null == self::findProductDomain($productDomains, $product, $domain)) {
-            array_push($productDomains, new ProductDomain($product, $domain));
+        if (null == self::findProductDomainAndUpdate($productDomains, $product, $domain)) {
+            $productDomains[] = new ProductDomain($product, $domain);
         }
+
         $endpoint->setProductDomains($productDomains);
     }
 
-    private static function findProductDomain($productDomains, $product, $domain)
+    /**
+     * @param $productDomains
+     * @param $product
+     * @param $domain
+     *
+     * @return string|null
+     */
+    private static function findProductDomainAndUpdate($productDomains, $product, $domain)
     {
         foreach ($productDomains as $key => $productDomain) {
-            if ($productDomain->getProductName() == $product && $productDomain->getDomainName() == $domain) {
+            if ($productDomain->getProductName() == $product) {
+                $productDomain->setDomainName($domain);
                 return $productDomain;
             }
         }
         return null;
     }
-
 }
