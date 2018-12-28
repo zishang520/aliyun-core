@@ -26,16 +26,15 @@ use luoyy\AliCore\Regions\ProductDomain;
 
 class EndpointConfig
 {
-    public static $regionIds = array("cn-hangzhou", "cn-beijing", "cn-qingdao", "cn-hongkong", "cn-shanghai", "us-west-1", "cn-shenzhen", "ap-southeast-1");
-
     public static function regionIds()
     {
-        return self::$regionIds;
+        return array("cn-hangzhou", "cn-beijing", "cn-qingdao", "cn-hongkong", "cn-shanghai", "us-west-1", "cn-shenzhen", "ap-southeast-1");
     }
 
     public static function productDomains()
     {
         return array(
+            new ProductDomain('Dysmsapi', 'dysmsapi.aliyuncs.com'),
             new ProductDomain("Oss", "oss-cn-hangzhou.aliyuncs.com"),
             new ProductDomain("Ecs", "ecs.aliyuncs.com"),
             new ProductDomain("Rds", "rds.aliyuncs.com"),
@@ -63,6 +62,6 @@ class EndpointConfig
 
     public static function setEndpoints($regionId = 'cn-hangzhou')
     {
-        EndpointProvider::setEndpoints(array(new Endpoint($regionId, self::$regionIds, self::productDomains())));
+        EndpointProvider::setEndpoints(array(new Endpoint($regionId, self::regionIds(), self::productDomains())));
     }
 }
