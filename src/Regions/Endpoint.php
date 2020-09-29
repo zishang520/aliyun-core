@@ -27,7 +27,7 @@ class Endpoint
      */
     private $name;
     /**
-     * @var string
+     * @var array
      */
     private $regionIds;
     /**
@@ -66,7 +66,7 @@ class Endpoint
     }
 
     /**
-     * @return string
+     * @return array
      */
     public function getRegionIds()
     {

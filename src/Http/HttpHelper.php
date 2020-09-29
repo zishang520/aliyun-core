@@ -35,7 +35,7 @@ class HttpHelper
     public static $readTimeout = 80; //80 second
 
     /**
-     * @param        $url
+     * @param string $url
      * @param string $httpMethod
      * @param null   $postFields
      * @param null   $headers

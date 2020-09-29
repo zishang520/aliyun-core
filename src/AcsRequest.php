@@ -70,6 +70,14 @@ abstract class AcsRequest
      * @var null|string
      */
     protected $locationEndpointType;
+    /**
+     * @var array The original parameters of the request object.
+     */
+    protected $requestParameters = [];
+    /**
+     * @var string
+     */
+    protected $stringToBeSigned = '';
 
     /**
      * AcsRequest constructor.
@@ -80,8 +88,11 @@ abstract class AcsRequest
      * @param string|null $locationServiceCode
      * @param string      $locationEndpointType
      */
-    public function __construct($product, $version, $actionName, $locationServiceCode = null, $locationEndpointType = 'openAPI')
-    {
+    public function __construct($product,
+                                    $version,
+                                    $actionName,
+                                    $locationServiceCode = null,
+                                    $locationEndpointType = 'openAPI') {
         $this->headers['x-sdk-client'] = 'php/2.0.0';
         $this->product = $product;
         $this->version = $version;
@@ -266,5 +277,42 @@ abstract class AcsRequest
     public function getLocationEndpointType()
     {
         return $this->locationEndpointType;
+    }
+
+    /**
+     * Magic method for get parameters.
+     *
+     * @param string $name
+     * @param mixed  $arguments
+     *
+     * @return $this
+     */
+    public function __call($name, $arguments)
+    {
+        if (\strpos($name, 'get', 0) !== false) {
+            $parameterName = $this->propertyNameByMethodName($name);
+            return isset($this->requestParameters[$parameterName])
+            ? $this->requestParameters[$parameterName]
+            : null;
+        }
+        return $this;
+    }
+
+    /**
+     * @param string $methodName
+     *
+     * @return string
+     */
+    protected function propertyNameByMethodName($methodName)
+    {
+        return \mb_strcut($methodName, 3);
+    }
+
+    /**
+     * @return string
+     */
+    public function stringToBeSigned()
+    {
+        return $this->stringToBeSigned;
     }
 }

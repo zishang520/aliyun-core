@@ -101,7 +101,9 @@ class LocationService
      */
     private function checkCacheIsExpire($key)
     {
-        $lastClearTime = isset(self::$lastClearTimePerProduct[$key]) ? self::$lastClearTimePerProduct[$key] : null;
+        $lastClearTime = isset(self::$lastClearTimePerProduct[$key])
+        ? self::$lastClearTimePerProduct[$key]
+        : null;
         if ($lastClearTime === null) {
             $lastClearTime = time();
             self::$lastClearTimePerProduct[$key] = $lastClearTime;
@@ -129,10 +131,7 @@ class LocationService
      */
     private function findProductDomainFromLocationService($regionId, $serviceCode, $endPointType)
     {
-        $request = new DescribeEndpointRequest();
-        $request->setId($regionId);
-        $request->setServiceCode($serviceCode);
-        $request->setType($endPointType);
+        $request = new DescribeEndpointRequest($regionId, $serviceCode, $endPointType);
 
         $signer = $this->clientProfile->getSigner();
         $credential = $this->clientProfile->getCredential();

@@ -85,18 +85,18 @@ class DefaultAcsClient implements IAcsClient
     {
         $httpResponse = $this->doActionImpl($request, $iSigner, $credential, $autoRetry, $maxRetryNumber);
         $respObject = $this->parseAcsResponse($httpResponse->getBody(), $request->getAcceptFormat());
-        if (false == $httpResponse->isSuccess()) {
-            $this->buildApiException($respObject, $httpResponse->getStatus());
+        if (false === $httpResponse->isSuccess()) {
+            $this->buildApiException($respObject, $httpResponse->getStatus(), $request);
         }
         return $respObject;
     }
 
     /**
-     * @param      $request
-     * @param null $iSigner
-     * @param null $credential
-     * @param bool $autoRetry
-     * @param int  $maxRetryNumber
+     * @param AcsRequest $request
+     * @param null       $iSigner
+     * @param null       $credential
+     * @param bool       $autoRetry
+     * @param int        $maxRetryNumber
      *
      * @return HttpResponse
      * @throws ClientException
@@ -104,8 +104,7 @@ class DefaultAcsClient implements IAcsClient
     private function doActionImpl($request, $iSigner = null, $credential = null, $autoRetry = true, $maxRetryNumber = 3)
     {
         if (null == $this->iClientProfile && (null == $iSigner || null == $credential || null == $request->getRegionId() || null == $request->getAcceptFormat())) {
-            throw new ClientException('No active profile found.', 'SDK.InvalidProfile');
-        }
+            throw new ClientException('No active profile found.', 'SDK.InvalidProfile');}
         if (null == $iSigner) {
             $iSigner = $this->iClientProfile->getSigner();
         }
@@ -147,12 +146,14 @@ class DefaultAcsClient implements IAcsClient
         }
 
         if (count($request->getDomainParameter()) > 0) {
-            $httpResponse = HttpHelper::curl($requestUrl,
+            $httpResponse =
+            HttpHelper::curl($requestUrl,
                 $request->getMethod(),
                 $request->getDomainParameter(),
                 $request->getHeaders());
         } else {
-            $httpResponse = HttpHelper::curl($requestUrl, $request->getMethod(), $request->getContent(), $request->getHeaders());
+            $httpResponse =
+            HttpHelper::curl($requestUrl, $request->getMethod(), $request->getContent(), $request->getHeaders());
         }
 
         $retryTimes = 1;
@@ -160,12 +161,14 @@ class DefaultAcsClient implements IAcsClient
             $requestUrl = $request->composeUrl($iSigner, $credential, $domain);
 
             if (count($request->getDomainParameter()) > 0) {
-                $httpResponse = HttpHelper::curl($requestUrl,
+                $httpResponse =
+                HttpHelper::curl($requestUrl,
                     $request->getMethod(),
                     $request->getDomainParameter(),
                     $request->getHeaders());
             } else {
-                $httpResponse = HttpHelper::curl($requestUrl,
+                $httpResponse =
+                HttpHelper::curl($requestUrl,
                     $request->getMethod(),
                     $request->getContent(),
                     $request->getHeaders());
@@ -211,37 +214,49 @@ class DefaultAcsClient implements IAcsClient
     }
 
     /**
-     * @param object $respObject
-     * @param int    $httpStatus
+     * @param object     $respObject
+     * @param int        $httpStatus
+     *
+     * @param AcsRequest $request
      *
      * @throws ServerException
      */
-    private function buildApiException($respObject, $httpStatus)
+    private function buildApiException($respObject, $httpStatus, AcsRequest $request)
     {
+        $errorCode = 'UnknownServerError';
+        $errorMessage = 'The server returned an error without a detailed message. ';
+        $requestId = 'None';
+
         // Compatible with different results
         if (isset($respObject->Message, $respObject->Code, $respObject->RequestId)) {
-            throw new ServerException(
-                $respObject->Message, $respObject->Code, $httpStatus, $respObject->RequestId
-            );
+            $errorCode = $respObject->Code;
+            $errorMessage = $respObject->Message;
+            $requestId = $respObject->RequestId;
         }
 
         if (isset($respObject->message, $respObject->code, $respObject->requestId)) {
-            throw new ServerException(
-                $respObject->message, $respObject->code, $httpStatus, $respObject->requestId
-            );
+            $errorCode = $respObject->code;
+            $errorMessage = $respObject->message;
+            $requestId = $respObject->requestId;
         }
 
         if (isset($respObject->errorMsg, $respObject->errorCode)) {
-            throw new ServerException(
-                $respObject->errorMsg, $respObject->errorCode, $httpStatus, 'None'
-            );
+            $errorCode = $respObject->errorCode;
+            $errorMessage = $respObject->errorMsg;
+        }
+
+        if ($httpStatus === 400 && $errorCode === 'SignatureDoesNotMatch'
+            && strpos($errorMessage,
+                $request->stringToBeSigned()) !== false) {
+            $errorCode = 'InvalidAccessKeySecret';
+            $errorMessage = 'Specified Access Key Secret is not valid.';
         }
 
         throw new ServerException(
-            'The server returned an error without a detailed message. ',
-            'UnknownServerError',
+            $errorMessage,
+            $errorCode,
             $httpStatus,
-            'None'
+            $requestId
         );
     }
 

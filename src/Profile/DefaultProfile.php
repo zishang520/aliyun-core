@@ -2,6 +2,7 @@
 namespace luoyy\AliCore\Profile;
 
 use luoyy\AliCore\Auth\BearerTokenCredential;
+use luoyy\AliCore\Auth\BearTokenSigner;
 use luoyy\AliCore\Auth\Credential;
 use luoyy\AliCore\Auth\EcsRamRoleCredential;
 use luoyy\AliCore\Auth\RamRoleArnCredential;
@@ -9,6 +10,7 @@ use luoyy\AliCore\Auth\ShaHmac1Signer;
 use luoyy\AliCore\Profile\IClientProfile;
 use luoyy\AliCore\Regions\Endpoint;
 use luoyy\AliCore\Regions\EndpointProvider;
+use luoyy\AliCore\Regions\LocationService;
 use luoyy\AliCore\Regions\ProductDomain;
 
 /*
@@ -232,11 +234,17 @@ class DefaultProfile implements IClientProfile
      */
     public static function findEndpointByName($endpointName)
     {
+        if (self::$endpoints === null) {
+            return null;
+        }
+
         foreach (self::$endpoints as $key => $endpoint) {
             if ($endpoint->getName() == $endpointName) {
                 return $endpoint;
             }
         }
+
+        return null;
     }
 
     /**

@@ -88,10 +88,7 @@ class RamRoleArnService
         $signer = $this->clientProfile->getSigner();
         $ramRoleArnCredential = $this->clientProfile->getCredential();
 
-        $request = new AssumeRoleRequest();
-        $request->setRoleArn($ramRoleArnCredential->getRoleArn());
-        $request->setRoleSessionName($ramRoleArnCredential->getRoleSessionName());
-        $request->setDurationSeconds(3600);
+        $request = new AssumeRoleRequest($ramRoleArnCredential->getRoleArn(), $ramRoleArnCredential->getRoleSessionName());
 
         $requestUrl = $request->composeUrl($signer, $ramRoleArnCredential, self::$serviceDomain);
 
