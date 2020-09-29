@@ -57,11 +57,11 @@ abstract class AcsRequest
     /**
      * @var array
      */
-    protected $queryParameters = array();
+    protected $queryParameters = [];
     /**
      * @var array
      */
-    protected $headers = array();
+    protected $headers = [];
     /**
      * @var null|string
      */

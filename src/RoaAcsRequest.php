@@ -2,6 +2,7 @@
 namespace luoyy\AliCore;
 
 use luoyy\AliCore\AcsRequest;
+use luoyy\AliCore\Auth\BearerTokenCredential;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -31,11 +32,11 @@ abstract class RoaAcsRequest extends AcsRequest
     /**
      * @var array
      */
-    protected $pathParameters = array();
+    protected $pathParameters = [];
     /**
      * @var array
      */
-    private $domainParameters = array();
+    private $domainParameters = [];
     /**
      * @var string
      */
@@ -188,7 +189,7 @@ abstract class RoaAcsRequest extends AcsRequest
      */
     private function buildCanonicalHeaders()
     {
-        $sortMap = array();
+        $sortMap = [];
         foreach ($this->headers as $headerKey => $headerValue) {
             $key = strtolower($headerKey);
             if (strpos($key, 'x-acs-') === 0) {
@@ -211,7 +212,7 @@ abstract class RoaAcsRequest extends AcsRequest
     private function splitSubResource($uri)
     {
         $queIndex = strpos($uri, '?');
-        $uriParts = array();
+        $uriParts = [];
         if (null != $queIndex) {
             $uriParts[] = substr($uri, 0, $queIndex);
             $uriParts[] = substr($uri, $queIndex + 1);

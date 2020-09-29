@@ -1,6 +1,7 @@
 <?php
 namespace luoyy\AliCore\Regions;
 
+use luoyy\AliCore\Http\HttpHelper;
 use luoyy\AliCore\Location\Request\DescribeEndpointRequest;
 
 /*
@@ -31,11 +32,11 @@ class LocationService
     /**
      * @var array
      */
-    public static $cache = array();
+    public static $cache = [];
     /**
      * @var array
      */
-    public static $lastClearTimePerProduct = array();
+    public static $lastClearTimePerProduct = [];
     /**
      * @var string
      */

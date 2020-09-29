@@ -2,6 +2,7 @@
 namespace luoyy\AliCore;
 
 use luoyy\AliCore\AcsRequest;
+use luoyy\AliCore\Auth\BearerTokenCredential;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -31,7 +32,7 @@ abstract class RpcAcsRequest extends AcsRequest
     /**
      * @var array
      */
-    private $domainParameters = array();
+    private $domainParameters = [];
 
     /**
      * RpcAcsRequest constructor.

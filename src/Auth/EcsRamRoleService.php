@@ -2,6 +2,7 @@
 namespace luoyy\AliCore\Auth;
 
 use luoyy\AliCore\Auth\Credential;
+use luoyy\AliCore\Http\HttpHelper;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one

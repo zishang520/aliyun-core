@@ -2,6 +2,7 @@
 namespace luoyy\AliCore\Auth;
 
 use luoyy\AliCore\Auth\Credential;
+use luoyy\AliCore\Http\HttpHelper;
 use luoyy\AliCore\Sts\Request\AssumeRoleRequest;
 
 /*
