@@ -24,63 +24,79 @@ use luoyy\AliCore\RpcAcsRequest;
 
 class AssumeRoleRequest extends RpcAcsRequest
 {
+
+    /**
+     * @var string
+     */
+    protected $requestScheme = 'https';
+
+    /**
+     * @var string
+     */
+    protected $method = 'POST';
+
+    /**
+     * Class constructor.
+     */
     public function __construct()
     {
-        parent::__construct("Sts", "2015-04-01", "AssumeRole");
-        $this->setProtocol("https");
-        $this->setMethod("POST");
+        parent::__construct(
+            'Sts',
+            '2015-04-01',
+            'AssumeRole',
+            'sts'
+        );
     }
 
-    private $roleArn;
-
-    private $roleSessionName;
-
-    private $durationSeconds;
-
-    private $policy;
-
-    public function getRoleArn()
-    {
-        return $this->roleArn;
-    }
-
+    /**
+     * @param string $roleArn
+     *
+     * @return $this
+     */
     public function setRoleArn($roleArn)
     {
-        $this->roleArn = $roleArn;
-        $this->queryParameters["RoleArn"] = $roleArn;
+        $this->requestParameters['RoleArn'] = $roleArn;
+        $this->queryParameters['RoleArn'] = $roleArn;
+
+        return $this;
     }
 
-    public function getRoleSessionName()
-    {
-        return $this->roleSessionName;
-    }
-
+    /**
+     * @param string $roleSessionName
+     *
+     * @return $this
+     */
     public function setRoleSessionName($roleSessionName)
     {
-        $this->roleSessionName = $roleSessionName;
-        $this->queryParameters["RoleSessionName"] = $roleSessionName;
+        $this->requestParameters['RoleSessionName'] = $roleSessionName;
+        $this->queryParameters['RoleSessionName'] = $roleSessionName;
+
+        return $this;
     }
 
-    public function getDurationSeconds()
-    {
-        return $this->durationSeconds;
-    }
-
+    /**
+     * @param string $durationSeconds
+     *
+     * @return $this
+     */
     public function setDurationSeconds($durationSeconds)
     {
-        $this->durationSeconds = $durationSeconds;
-        $this->queryParameters["DurationSeconds"] = $durationSeconds;
+        $this->requestParameters['DurationSeconds'] = $durationSeconds;
+        $this->queryParameters['DurationSeconds'] = $durationSeconds;
+
+        return $this;
     }
 
-    public function getPolicy()
-    {
-        return $this->policy;
-    }
-
+    /**
+     * @param string $policy
+     *
+     * @return $this
+     */
     public function setPolicy($policy)
     {
-        $this->policy = $policy;
-        $this->queryParameters["Policy"] = $policy;
-    }
+        $this->requestParameters['Policy'] = $policy;
+        $this->queryParameters['Policy'] = $policy;
 
+        return $this;
+    }
 }

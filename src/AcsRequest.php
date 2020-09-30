@@ -88,11 +88,8 @@ abstract class AcsRequest
      * @param string|null $locationServiceCode
      * @param string      $locationEndpointType
      */
-    public function __construct($product,
-                                    $version,
-                                    $actionName,
-                                    $locationServiceCode = null,
-                                    $locationEndpointType = 'openAPI') {
+    public function __construct($product, $version, $actionName, $locationServiceCode = null, $locationEndpointType = 'openAPI')
+    {
         $this->headers['x-sdk-client'] = 'php/2.0.0';
         $this->product = $product;
         $this->version = $version;

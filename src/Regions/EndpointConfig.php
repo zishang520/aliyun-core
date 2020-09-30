@@ -1490,15 +1490,14 @@ class EndpointConfig
     {
         $product_domains = [];
         foreach ($products as $ProductName => $DomainName) {
-            $product_domains[] = new ProductDomain($ProductName, $DomainName);
+            array_push($product_domains, new ProductDomain($ProductName, $DomainName));
         }
         return $product_domains;
     }
 
     public static function setEndpoints($regionId = 'cn-hangzhou')
     {
-        $endpoint = self::ENDPOINTS[$regionId] ?? null;
-        if (is_null($endpoint)) {
+        if (is_null($endpoint = self::ENDPOINTS[$regionId] ?? null)) {
             throw new ClientException('Invalid RegionId', 'Invalid.RegionId');
         }
         EndpointProvider::setEndpoints([

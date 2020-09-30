@@ -2,7 +2,7 @@
     "name": "luoyy/aliyun-core",
     "description": "aliyun-php-sdk-core",
     "require": {
-        "php": ">=5.6.0"
+        "php": ">=7.1.0"
     },
     "authors": [{
         "name": "luoyy",

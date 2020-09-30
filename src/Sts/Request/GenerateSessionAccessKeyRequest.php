@@ -24,24 +24,40 @@ use luoyy\AliCore\RpcAcsRequest;
 
 class GenerateSessionAccessKeyRequest extends RpcAcsRequest
 {
+
+    /**
+     * @var string
+     */
+    protected $requestScheme = 'https';
+
+    /**
+     * @var string
+     */
+    protected $method = 'POST';
+
+    /**
+     * Class constructor.
+     */
     public function __construct()
     {
-        parent::__construct("Sts", "2015-04-01", "GenerateSessionAccessKey");
-        $this->setProtocol("https");
-        $this->setMethod("POST");
+        parent::__construct(
+            'Sts',
+            '2015-04-01',
+            'GenerateSessionAccessKey',
+            'sts'
+        );
     }
 
-    private $durationSeconds;
-
-    public function getDurationSeconds()
-    {
-        return $this->durationSeconds;
-    }
-
+    /**
+     * @param string $durationSeconds
+     *
+     * @return $this
+     */
     public function setDurationSeconds($durationSeconds)
     {
-        $this->durationSeconds = $durationSeconds;
-        $this->queryParameters["DurationSeconds"] = $durationSeconds;
-    }
+        $this->requestParameters['DurationSeconds'] = $durationSeconds;
+        $this->queryParameters['DurationSeconds'] = $durationSeconds;
 
+        return $this;
+    }
 }
