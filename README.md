@@ -34,10 +34,12 @@ $response = AcsClient::getAcsResponse($request);
 var_dump($response);
 ```
 #### 相关包
-| 包名 | 描述 |
-| :------------ | :------------ |
-| luoyy/aliyun-core-sms |  短信sdk |
+| 包名 | 描述 | 版本 |
+| :------------ | :------------ | :------------ |
+| luoyy/aliyun-core-sms |  短信sdk | v1.0.1|
+| luoyy/aliyun-core-pns |  手机号认证sdk | v1.0.0|
 
 
 ### 更新日志
-* `2020.09.30`：更新版本到2.0，更新SDK，除了STS其它模块改为omposer包发布
+* `2021.01.19`：添加手机号认证sdk
+* `2020.09.30`：更新版本到2.0，更新SDK，除了STS其它模块改为composer包发布
